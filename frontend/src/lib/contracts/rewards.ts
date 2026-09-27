@@ -52,6 +52,14 @@ export class RewardsClient {
     return result ? BigInt(result) : 0n
   }
 
+  async getQuestDistributed(questId: number): Promise<bigint> {
+    const result = await this.invokeRead("get_quest_distributed", [
+      nativeToScVal(questId, { type: "u32" }),
+    ])
+    if (!result) return 0n
+    return BigInt(scValToNative(result))
+  }
+
   async getTotalDistributed(): Promise<TotalDistributed> {
     const result = await this.invokeRead("get_total_distributed", [])
     return result ? BigInt(result) : 0n
