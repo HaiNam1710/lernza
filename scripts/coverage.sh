@@ -4,8 +4,8 @@ set -euo pipefail
 # Per-package coverage for Lernza contracts.
 # Quest, milestone and rewards report separately so threshold failures identify the affected package.
 
-PACKAGES=(quest milestone rewards)
-THRESHOLDS=(70 70 70)
+PACKAGES=(quest milestone rewards certificate completion)
+THRESHOLDS=(70 70 70 70 70)
 
 echo "Running coverage per package..."
 
