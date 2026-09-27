@@ -181,7 +181,7 @@ impl CertificateContract {
     ) -> Result<u32, Error> {
         Self::require_not_paused(&env)?;
         let owner = ownable::get_owner(&env).ok_or(Error::NotOwner)?;
-        Self::mint_certificate(env, quest_id, quest_name, quest_category, recipient, owner)
+        Self::internal_mint(&env, quest_id, quest_name, quest_category, recipient, owner)
     }
 
     pub fn get_certificate_details(
@@ -375,9 +375,9 @@ impl CertificateContract {
             return Err(Error::NotCompleted);
         }
 
-        // Mint using the contract's own address as the issuer
-        Self::mint_certificate(
-            env.clone(),
+        // Mint using the contract's own address as the issuer via decoupled internal helper
+        Self::internal_mint(
+            &env,
             quest_id,
             quest_name,
             quest_category,
