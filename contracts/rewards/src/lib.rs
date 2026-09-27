@@ -1318,9 +1318,6 @@ impl RewardsContract {
             .set(&DataKey::SupportedTokens, &list);
         env.storage()
             .instance()
-            .set(&DataKey::SupportedTokens, &list);
-        env.storage()
-            .instance()
             .set(&DataKey::SupportedTokensEnabled, &true);
         extend_instance_ttl(&env);
         Ok(())
@@ -1349,9 +1346,6 @@ impl RewardsContract {
                 }
             }
         }
-        env.storage()
-            .instance()
-            .set(&DataKey::SupportedTokens, &list);
         env.storage()
             .instance()
             .set(&DataKey::SupportedTokens, &list);
