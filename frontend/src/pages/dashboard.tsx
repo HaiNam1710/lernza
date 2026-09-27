@@ -25,6 +25,7 @@ import { SkeletonQuestList } from "@/components/ui/skeleton"
 import { SmartError } from "@/components/error-states"
 import { SectionErrorBoundary } from "@/components/error-boundary"
 import { useWallet } from "@/hooks/use-wallet"
+import { logger } from "@/lib/logger"
 import { questClient } from "@/lib/contracts/quest"
 import { milestoneClient } from "@/lib/contracts/milestone"
 import { rewardsClient } from "@/lib/contracts/rewards"
@@ -141,13 +142,13 @@ export function Dashboard(
 
       const allQuests = [...publicQuests, ...ownedQuests, ...enrolledQuests]
       if (allQuests.length === 0) {
-        console.warn("[Dashboard] No quests loaded from any source")
+        logger.warn("[Dashboard] No quests loaded from any source")
       }
 
       const questMap = new Map(allQuests.map(quest => [quest.id, quest] as const))
 
       if (questMap.size < allQuests.length) {
-        console.warn(
+        logger.warn(
           `[Dashboard] Deduplication lost ${allQuests.length - questMap.size} quest(s)`,
           { before: allQuests.length, after: questMap.size }
         )
@@ -162,13 +163,13 @@ export function Dashboard(
       ]
 
       if (previewAllQuests.length === 0) {
-        console.warn("[Dashboard] No preview quests loaded from any source")
+        logger.warn("[Dashboard] No preview quests loaded from any source")
       }
 
       const previewQuestMap = new Map(previewAllQuests.map(quest => [quest.id, quest] as const))
 
       if (previewQuestMap.size < previewAllQuests.length) {
-        console.warn(
+        logger.warn(
           `[Dashboard] Preview deduplication lost ${previewAllQuests.length - previewQuestMap.size} quest(s)`,
           { before: previewAllQuests.length, after: previewQuestMap.size }
         )
