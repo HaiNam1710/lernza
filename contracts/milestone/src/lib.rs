@@ -1,5 +1,5 @@
 #![no_std]
-#![allow(clippy::too_many_arguments, dead_code)]
+#![allow(clippy::too_many_arguments)]
 use common::{extend_instance_ttl, EnrolleeStatus, QuestInfo, BUMP, MAX_REWARD_AMOUNT, THRESHOLD};
 use soroban_sdk::{
     contract, contractclient, contracterror, contractimpl, contracttype, Address, BytesN, Env,
