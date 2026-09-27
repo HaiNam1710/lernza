@@ -29,6 +29,52 @@ interface ActiveQuestEntry {
 
 const PAGE_SIZE = 50
 
+
+interface CacheEntry {
+  totalEarned: bigint
+  timestamp: number
+}
+
+const EARNINGS_CACHE_TTL_MS = 60_000 // 1 minute cache TTL
+const earningsCache = new Map<string, CacheEntry>()
+const RPC_CONCURRENCY_LIMIT = 10
+
+export function clearEarningsCache() {
+  earningsCache.clear()
+}
+
+async function getCachedUserEarnings(address: string): Promise<bigint> {
+  const now = Date.now()
+  const cached = earningsCache.get(address)
+  if (cached && now - cached.timestamp < EARNINGS_CACHE_TTL_MS) {
+    return cached.totalEarned
+  }
+  const totalEarned = await rewardsClient.getUserEarnings(address)
+  earningsCache.set(address, { totalEarned, timestamp: now })
+  return totalEarned
+}
+
+async function fetchWithConcurrencyLimit<T, R>(
+  items: T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  if (items.length === 0) return []
+  const results: R[] = new Array(items.length)
+  let currentIndex = 0
+
+  const workerCount = Math.min(limit, items.length)
+  const workers = Array.from({ length: workerCount }, async () => {
+    while (currentIndex < items.length) {
+      const index = currentIndex++
+      results[index] = await fn(items[index])
+    }
+  })
+
+  await Promise.all(workers)
+  return results
+}
+
 export async function fetchTopEarners(offset: number = 0): Promise<EarnerEntry[]> {
   const quests = await questClient.listPublicQuests(offset, PAGE_SIZE)
   const enrolleeSets = await Promise.all(quests.map(q => questClient.getEnrollees(q.id)))
@@ -40,11 +86,14 @@ export async function fetchTopEarners(offset: number = 0): Promise<EarnerEntry[]
     }
   }
 
-  const entries = await Promise.all(
-    Array.from(allAddresses).map(async address => {
-      const totalEarned = await rewardsClient.getUserEarnings(address)
+  const addressList = Array.from(allAddresses)
+  const entries = await fetchWithConcurrencyLimit(
+    addressList,
+    RPC_CONCURRENCY_LIMIT,
+    async address => {
+      const totalEarned = await getCachedUserEarnings(address)
       return { address, totalEarned }
-    })
+    }
   )
 
   return entries
