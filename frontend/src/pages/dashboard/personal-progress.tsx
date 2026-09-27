@@ -2,7 +2,7 @@ import { Activity } from "lucide-react"
 import { formatTokens } from "@/lib/utils"
 
 interface UserStatsType {
-  totalEarned: number
+  totalEarned: bigint
   questsOwned: number
   questsEnrolled: number
   milestonesCompleted: number
