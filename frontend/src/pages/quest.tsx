@@ -1,3 +1,26 @@
+// In-memory cache for completion status: key -> { completed: boolean, timestamp: number }
+const completionCache = new Map<string, { completed: boolean; timestamp: number }>()
+const CACHE_TTL_MS = 60_000 // 60 seconds TTL
+
+async function fetchWithConcurrency<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const results: R[] = new Array(items.length)
+  let currentIndex = 0
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (currentIndex < items.length) {
+      const idx = currentIndex++
+      results[idx] = await fn(items[idx])
+    }
+  })
+
+  await Promise.all(workers)
+  return results
+}
+
 // frontend/src/pages/quest.tsx (wired to on-chain data)
 import { useState, useMemo, useCallback, useEffect } from "react"
 import { ToastContainer } from "@/components/toast"
@@ -89,7 +112,7 @@ export function QuestView({ questId, onBack }: QuestViewProps) {
   // Fetch completion status for each enrollee x milestone combination
   const [completionMap, setCompletionMap] = useState<Record<string, boolean>>({})
 
-  // Load completions when enrollees or milestones change
+  // Load completions when enrollees or milestones change with caching and 15-worker concurrency
   useEffect(() => {
     if (enrolleeAddresses.length === 0 || milestones.length === 0) {
       setCompletionMap({})
@@ -100,13 +123,30 @@ export function QuestView({ questId, onBack }: QuestViewProps) {
 
     const loadCompletions = async () => {
       try {
-        const entries: [string, boolean][] = []
+        const pairs: Array<{ enrollee: string; milestoneId: number }> = []
         for (const enrollee of enrolleeAddresses) {
           for (const milestone of milestones) {
-            const completed = await milestoneClient.isCompleted(questId, milestone.id, enrollee)
-            entries.push([`${enrollee}-${milestone.id}`, completed])
+            pairs.push({ enrollee, milestoneId: milestone.id })
           }
         }
+
+        const now = Date.now()
+        const entries = await fetchWithConcurrency(pairs, 15, async ({ enrollee, milestoneId }) => {
+          const cacheKey = `${questId}-${enrollee}-${milestoneId}`
+          const cached = completionCache.get(cacheKey)
+          if (cached && now - cached.timestamp < CACHE_TTL_MS) {
+            return [`${enrollee}-${milestoneId}`, cached.completed] as [string, boolean]
+          }
+
+          try {
+            const completed = await milestoneClient.isCompleted(questId, milestoneId, enrollee)
+            completionCache.set(cacheKey, { completed, timestamp: now })
+            return [`${enrollee}-${milestoneId}`, completed] as [string, boolean]
+          } catch {
+            return [`${enrollee}-${milestoneId}`, false] as [string, boolean]
+          }
+        })
+
         if (!cancelled) {
           setCompletionMap(Object.fromEntries(entries))
         }
