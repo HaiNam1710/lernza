@@ -421,3 +421,22 @@ fn test_revoke_only_removes_target_certificate_from_user_list() {
     assert!(client.is_revoked(&cert1));
     assert!(!client.is_revoked(&cert2));
 }
+
+#[test]
+fn test_mint_quest_certificate_decoupled_flow() {
+    let (env, client, owner) = setup();
+    let recipient = Address::generate(&env);
+
+    let cert_id = client.mint_quest_certificate(
+        &101u32,
+        &String::from_str(&env, "Rust On Stellar"),
+        &String::from_str(&env, "Smart Contracts"),
+        &recipient,
+    );
+
+    assert!(client.has_quest_certificate(&101u32, &recipient));
+    assert_eq!(client.get_quest_certificate(&101u32, &recipient), cert_id);
+    let (meta, cert_owner) = client.get_certificate_details(&cert_id);
+    assert_eq!(meta.quest_id, 101u32);
+    assert_eq!(cert_owner, recipient);
+}
