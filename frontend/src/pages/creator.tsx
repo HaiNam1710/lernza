@@ -36,30 +36,22 @@ export function CreatorProfile({ address }: CreatorProfileProps) {
 
       const questStats = await Promise.all(
         quests.map(async q => {
-          const [enrollees, milestoneCount, poolBalance] = await Promise.all([
+          const [enrollees, milestoneCount, poolBalance, questDistributed] = await Promise.all([
             questClient.getEnrollees(q.id),
             milestoneClient.getMilestoneCount(q.id),
             rewardsClient.getPoolBalance(q.id),
+            rewardsClient.getQuestDistributed(q.id).catch(() => 0n),
           ])
 
-          // For each quest, we can count total completions as certificates
-          // This is an approximation as requested: "aggregate: quests, rewards, certificates"
-          // We'll sum up completions across all enrollees for each quest
+          // Sum up completions across all enrollees for each quest
           const completions = await Promise.all(
             enrollees.map(enrollee => milestoneClient.getEnrolleeCompletions(q.id, enrollee))
           )
           const questCompletions = completions.reduce((sum, count) => sum + count, 0)
           totalCertificates += questCompletions
 
-          // Note: Total Distributed usually means what was PAID OUT.
-          // Since we don't have a direct 'get_distributed_by_owner' yet,
-          // we'll use a placeholder or sum up some historical data if available.
-          // For now, let's just show a realistic aggregated number based on completions.
-          // Assuming each completion pays out (Total Pool / Milestone Count)
-          if (milestoneCount > 0) {
-            const perMilestone = poolBalance / BigInt(milestoneCount)
-            totalDistributed += perMilestone * BigInt(questCompletions)
-          }
+          // Use actual on-chain distributed amounts per quest
+          totalDistributed += questDistributed
 
           return {
             ...q,
