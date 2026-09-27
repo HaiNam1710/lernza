@@ -400,7 +400,7 @@ export function Dashboard(
   )
 
   const personalStats = {
-    totalEarned: Number(userEarnings),
+    totalEarned: typeof userEarnings === "bigint" ? userEarnings : BigInt(userEarnings || 0),
     questsOwned: ownedCount,
     questsEnrolled: enrolledCount,
     milestonesCompleted,
