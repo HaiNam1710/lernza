@@ -1830,6 +1830,18 @@ impl RewardsContract {
     /// counter `TotalDistributed` is the fast read; this is the
     /// authoritative source of truth that survives across contract
     /// upgrades.
+    /// Persistent per-quest aggregate of distributed tokens.
+    pub fn get_quest_distributed(env: Env, quest_id: u32) -> i128 {
+        env.storage()
+            .persistent()
+            .get(&DataKey::QuestDistributed(quest_id))
+            .unwrap_or(0)
+    }
+
+    /// Persistent per-quest aggregate of refunded tokens. The instance
+    /// counter `TotalDistributed` is the fast read; this is the
+    /// authoritative source of truth that survives across contract
+    /// upgrades.
     pub fn get_quest_refunded(env: Env, quest_id: u32) -> i128 {
         env.storage()
             .persistent()
