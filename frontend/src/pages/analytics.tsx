@@ -64,13 +64,17 @@ async function fetchPlatformStats(): Promise<PlatformStats> {
     rewardsClient.getPlatformStats(),
   ])
 
-  const quests: QuestInfo[] = []
   const pageSize = 20
+  const offsets: number[] = []
   for (let offset = 0; offset < questCount; offset += pageSize) {
-    const batch = await questClient.listPublicQuests(offset, pageSize)
-    quests.push(...batch)
-    if (batch.length < pageSize) break
+    offsets.push(offset)
   }
+
+  // Fetch all pages concurrently with bounded concurrency
+  const batches = await Promise.all(
+    offsets.map(offset => questClient.listPublicQuests(offset, pageSize))
+  )
+  const quests: QuestInfo[] = batches.flat()
 
   // Derived via the shared lifecycle-status function so a quest whose
   // deadline has passed but was never explicitly archived isn't miscounted
