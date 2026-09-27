@@ -16,6 +16,16 @@ coverage:
         threshold: 1%
         flags: rewards
         informational: false
+      certificate:
+        target: 70%
+        threshold: 1%
+        flags: certificate
+        informational: false
+      completion:
+        target: 70%
+        threshold: 1%
+        flags: completion
+        informational: false
     patch:
       default:
         target: 60%
@@ -41,6 +51,14 @@ flags:
   rewards:
     paths:
       - contracts/rewards/
+    carryforward: false
+  certificate:
+    paths:
+      - contracts/certificate/
+    carryforward: false
+  completion:
+    paths:
+      - contracts/completion/
     carryforward: false
   common:
     paths:
